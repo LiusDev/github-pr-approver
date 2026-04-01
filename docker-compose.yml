@@ -1,0 +1,8 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8070:8070"
+    volumes:
+      - ./config.json:/app/config.json:ro
+    restart: unless-stopped

@@ -1,0 +1,10 @@
+{
+  "auth": [
+    { "username": "alice", "password": "your_password_here" },
+    { "username": "bob", "password": "your_password_here" }
+  ],
+  "users": [
+    { "name": "Alice", "token": "ghp_your_token_here" },
+    { "name": "Bob", "token": "ghp_your_token_here" }
+  ]
+}
