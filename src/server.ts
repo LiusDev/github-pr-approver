@@ -4,7 +4,7 @@ import { basicAuth } from "hono/basic-auth";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { loadConfig } from "./config.js";
-import { approvePr, parsePrUrl } from "./github.js";
+import { approvePr, approvePrAndMerge, parsePrUrl } from "./github.js";
 
 const config = loadConfig();
 const app = new Hono();
@@ -56,6 +56,47 @@ app.post("/api/approve", async (c) => {
     return c.json({
       success: true,
       message: `Approved PR #${result.prNumber} in ${result.repoFullName}`,
+      prTitle: result.prTitle,
+      prNumber: result.prNumber,
+      repoFullName: result.repoFullName,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return c.json({ success: false, message }, 500);
+  }
+});
+
+app.post("/api/approve-and-merge", async (c) => {
+  let body: { prUrl?: string; userName?: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ success: false, message: "Invalid JSON body" }, 400);
+  }
+
+  const { prUrl, userName } = body;
+
+  if (!prUrl || !userName) {
+    return c.json({ success: false, message: "Missing prUrl or userName" }, 400);
+  }
+
+  const user = config.users.find((u) => u.name === userName);
+  if (!user) {
+    return c.json({ success: false, message: `User "${userName}" not found in config` }, 404);
+  }
+
+  let coords;
+  try {
+    coords = parsePrUrl(prUrl);
+  } catch (err) {
+    return c.json({ success: false, message: (err as Error).message }, 400);
+  }
+
+  try {
+    const result = await approvePrAndMerge(coords, user.token);
+    return c.json({
+      success: true,
+      message: `Approved and merged PR #${result.prNumber} in ${result.repoFullName}`,
       prTitle: result.prTitle,
       prNumber: result.prNumber,
       repoFullName: result.repoFullName,

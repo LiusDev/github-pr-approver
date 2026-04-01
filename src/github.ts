@@ -54,3 +54,20 @@ export async function approvePr(
     repoFullName: `${coords.owner}/${coords.repo}`,
   };
 }
+
+export async function approvePrAndMerge(
+  coords: PrCoords,
+  token: string
+): Promise<ApproveResult> {
+  const result = await approvePr(coords, token);
+
+  const octokit = new Octokit({ auth: token });
+  await octokit.pulls.merge({
+    owner: coords.owner,
+    repo: coords.repo,
+    pull_number: coords.pullNumber,
+    merge_method: "rebase",
+  });
+
+  return result;
+}

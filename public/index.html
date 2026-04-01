@@ -84,6 +84,11 @@
     button:hover:not(:disabled) { background: #2ea043; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+    .button-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .button-row button { margin-top: 0; }
+    #approveMergeBtn { background: #1f6feb; border-color: #388bfd; }
+    #approveMergeBtn:hover:not(:disabled) { background: #388bfd; }
+
     #status {
       margin-top: 1rem;
       padding: 0.75rem 1rem;
@@ -133,7 +138,10 @@
       />
     </div>
 
-    <button id="approveBtn" onclick="approve()">Approve PR</button>
+    <div class="button-row">
+      <button id="approveBtn" onclick="approve()">Approve PR</button>
+      <button id="approveMergeBtn" onclick="approveAndMerge()">Approve &amp; Merge</button>
+    </div>
 
     <div id="status"></div>
   </div>
@@ -151,6 +159,11 @@
       });
     }
 
+    function setButtonsDisabled(disabled) {
+      document.getElementById('approveBtn').disabled = disabled;
+      document.getElementById('approveMergeBtn').disabled = disabled;
+    }
+
     async function approve() {
       const btn = document.getElementById('approveBtn');
       const statusEl = document.getElementById('status');
@@ -165,7 +178,7 @@
         return;
       }
 
-      btn.disabled = true;
+      setButtonsDisabled(true);
       btn.textContent = 'Approving…';
 
       try {
@@ -187,8 +200,49 @@
       } catch (err) {
         showStatus('error', '✗ Network error. Is the server running?');
       } finally {
-        btn.disabled = false;
+        setButtonsDisabled(false);
         btn.textContent = 'Approve PR';
+      }
+    }
+
+    async function approveAndMerge() {
+      const btn = document.getElementById('approveMergeBtn');
+      const statusEl = document.getElementById('status');
+      const prUrl = document.getElementById('prUrl').value.trim();
+      const userName = document.getElementById('user').value;
+
+      statusEl.style.display = 'none';
+      statusEl.className = '';
+
+      if (!prUrl) {
+        showStatus('error', 'Please paste a PR URL.');
+        return;
+      }
+
+      setButtonsDisabled(true);
+      btn.textContent = 'Approving & merging…';
+
+      try {
+        const res = await fetch('/api/approve-and-merge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prUrl, userName }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showStatus('success',
+            `✓ Approved and merged!<div class="pr-info"><strong>#${data.prNumber}</strong> ${escHtml(data.prTitle)}<br>${escHtml(data.repoFullName)}</div>`
+          );
+          document.getElementById('prUrl').value = '';
+        } else {
+          showStatus('error', `✗ ${escHtml(data.message)}`);
+        }
+      } catch (err) {
+        showStatus('error', '✗ Network error. Is the server running?');
+      } finally {
+        setButtonsDisabled(false);
+        btn.textContent = 'Approve & Merge';
       }
     }
 
