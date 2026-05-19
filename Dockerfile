@@ -1,6 +1,6 @@
 FROM node:22-alpine AS builder
 
-RUN corepack enable
+RUN npm install -g pnpm@10.33.2
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
@@ -11,7 +11,7 @@ RUN pnpm run build
 
 FROM node:22-alpine
 
-RUN corepack enable
+RUN npm install -g pnpm@10.33.2
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod
