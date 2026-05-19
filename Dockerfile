@@ -18,7 +18,7 @@ RUN pnpm install --frozen-lockfile --prod
 COPY --from=builder /app/dist ./dist
 COPY public/ ./public/
 
-ENV PORT=8009
-EXPOSE 8009
+ENV PORT=8070
+EXPOSE 8070
 
 CMD ["node", "dist/server.js"]
