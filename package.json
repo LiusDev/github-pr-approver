@@ -2,21 +2,20 @@
   "name": "github-pr-approver",
   "version": "1.0.0",
   "description": "Auto-approve GitHub PRs via a local web UI",
-  "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
-    "@hono/node-server": "^1.13.7",
     "@octokit/rest": "^21.0.2",
     "hono": "^4.6.13"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "wrangler": "^3.99.0"
   },
-  "packageManager": "pnpm@10.33.2"
+  "packageManager": "pnpm@10.33.2",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "workerd", "sharp"]
+  }
 }

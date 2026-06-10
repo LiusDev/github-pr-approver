@@ -1,28 +1,28 @@
-import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { basicAuth } from "hono/basic-auth";
-import { readFileSync } from "fs";
-import { resolve } from "path";
-import { loadConfig } from "./config.js";
-import { approvePr, approvePrAndMerge, parsePrUrl } from "./github.js";
+import { getConfig } from "./config";
+import { approvePr, approvePrAndMerge, parsePrUrl } from "./github";
+import { Home } from "./Home";
 
-const config = loadConfig();
-const app = new Hono();
+type Env = { CONFIG: string };
 
-app.use(
-  "*",
-  basicAuth({ verifyUser: (username, password) =>
-    config.auth.some((c) => c.username === username && c.password === password)
-  })
-);
+const app = new Hono<{ Bindings: Env }>();
+
+app.use("*", async (c, next) => {
+  const cfg = getConfig(c.env);
+  return basicAuth({
+    verifyUser: (username, password) =>
+      cfg.auth.some((a) => a.username === username && a.password === password),
+  })(c, next);
+});
 
 app.get("/", (c) => {
-  const html = readFileSync(resolve(process.cwd(), "public/index.html"), "utf-8");
-  return c.html(html);
+  return c.html(<Home />);
 });
 
 app.get("/api/users", (c) => {
-  return c.json(config.users.map((u) => u.name));
+  const cfg = getConfig(c.env);
+  return c.json(cfg.users.map((u) => u.name));
 });
 
 app.post("/api/approve", async (c) => {
@@ -39,7 +39,8 @@ app.post("/api/approve", async (c) => {
     return c.json({ success: false, message: "Missing prUrl or userName" }, 400);
   }
 
-  const user = config.users.find((u) => u.name === userName);
+  const cfg = getConfig(c.env);
+  const user = cfg.users.find((u) => u.name === userName);
   if (!user) {
     return c.json({ success: false, message: `User "${userName}" not found in config` }, 404);
   }
@@ -80,7 +81,8 @@ app.post("/api/approve-and-merge", async (c) => {
     return c.json({ success: false, message: "Missing prUrl or userName" }, 400);
   }
 
-  const user = config.users.find((u) => u.name === userName);
+  const cfg = getConfig(c.env);
+  const user = cfg.users.find((u) => u.name === userName);
   if (!user) {
     return c.json({ success: false, message: `User "${userName}" not found in config` }, 404);
   }
@@ -107,6 +109,4 @@ app.post("/api/approve-and-merge", async (c) => {
   }
 });
 
-const port = parseInt(process.env.PORT ?? "3456", 10);
-console.log(`GitHub PR Approver running at http://localhost:${port}`);
-serve({ fetch: app.fetch, port });
+export default app;

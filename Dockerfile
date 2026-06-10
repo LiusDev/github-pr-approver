@@ -1,3 +1,7 @@
+# NOTE: This Docker setup is superseded by Cloudflare Workers deployment.
+# Use `pnpm deploy` (wrangler deploy) instead.
+# This file is kept for reference only.
+
 FROM node:22-alpine AS builder
 
 RUN npm install -g pnpm@10.33.2

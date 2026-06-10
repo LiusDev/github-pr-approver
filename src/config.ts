@@ -1,6 +1,3 @@
-import { readFileSync } from "fs";
-import { resolve } from "path";
-
 export interface User {
   name: string;
   token: string;
@@ -16,21 +13,16 @@ interface Config {
   users: User[];
 }
 
-export function loadConfig(): Config {
-  const configPath = resolve(process.cwd(), "config.json");
-  let raw: string;
+export function parseConfig(raw: string): Config {
+  let config: Config;
   try {
-    raw = readFileSync(configPath, "utf-8");
+    config = JSON.parse(raw) as Config;
   } catch {
-    throw new Error(
-      "config.json not found. Copy config.example.json to config.json and fill in your GitHub tokens."
-    );
+    throw new Error("CONFIG secret is not valid JSON.");
   }
 
-  const config = JSON.parse(raw) as Config;
-
   if (!Array.isArray(config.auth) || config.auth.length === 0) {
-    throw new Error("config.json must have a non-empty 'auth' array.");
+    throw new Error("CONFIG must have a non-empty 'auth' array.");
   }
   for (const cred of config.auth) {
     if (!cred.username || !cred.password) {
@@ -39,7 +31,7 @@ export function loadConfig(): Config {
   }
 
   if (!Array.isArray(config.users) || config.users.length === 0) {
-    throw new Error("config.json must have a non-empty 'users' array.");
+    throw new Error("CONFIG must have a non-empty 'users' array.");
   }
   for (const user of config.users) {
     if (!user.name || !user.token) {
@@ -48,4 +40,11 @@ export function loadConfig(): Config {
   }
 
   return config;
+}
+
+let _cached: Config | null = null;
+
+export function getConfig(env: { CONFIG: string }): Config {
+  if (!_cached) _cached = parseConfig(env.CONFIG);
+  return _cached;
 }
